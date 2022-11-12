@@ -1,0 +1,395 @@
+Project med {
+  database_type: 'MS SQL Server'
+  Note: '''
+  The `med` database was designed to be a sandbox for practicing SQL queries. It simulates a medical group composed of practices which have multiple locations at which many providers may deliver medical services.
+
+  It can be set up entirely by accessing [the repository at this link](https://github.com/link-leocorde/med) and executing the `.sql` files therein.
+  ```
+  git clone https://github.com/link-leocorde/med.git
+  ```
+
+  > This database uses [MS SQL Server Temporal Tables](https://learn.microsoft.com/en-us/sql/relational-databases/tables/temporal-tables) to track changes as data is updated.
+  '''
+}
+
+Table "ref"."PersonStatus" {
+  "PersonStatusId" int [not null, increment]
+  "StatusCode" varchar(25) [not null]
+  "StatusDescription" varchar(255)
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  PersonStatusId [pk]
+  StatusCode [unique, name: "uq_PersonStatus_StatusCode"]
+}
+}
+
+Table "ref"."TeleHealth" {
+  "TeleHealthId" int [not null, increment]
+  "TeleHealthName" varchar(255) [not null]
+  "TeleHealthDescription" varchar(255)
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  TeleHealthId [pk]
+  TeleHealthName [unique, name: "uq_TeleHealth_TeleHealthName"]
+}
+}
+
+Table "ref"."Specialty" {
+  "SpecialtyId" int [not null, increment]
+  "SpecialtyName" varchar(255) [not null]
+  "SpecialtyDescription" varchar(255)
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  SpecialtyId [pk]
+  SpecialtyName [unique, name: "uq_Specialty_SpecialtyName"]
+}
+}
+
+Table "ref"."SpecialtyType" {
+  "SpecialtyTypeId" int [not null, increment]
+  "SpecialtyTypeName" varchar(255) [not null]
+  "SpecialtyTypeDescription" varchar(255)
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  SpecialtyTypeId [pk]
+  SpecialtyTypeName [unique, name: "uq_SpecialtyType_SpecialtyTypeName"]
+}
+}
+
+Table "ref"."Role" {
+  "RoleId" int [not null, increment]
+  "RoleName" varchar(255) [not null]
+  "RoleDescription" varchar(255)
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  RoleId [pk]
+  RoleName [unique, name: "uq_Role_RoleName"]
+}
+}
+
+Table "ref"."ContactType" {
+  "ContactTypeId" int [not null, increment]
+  "ContactTypeName" varchar(255) [not null]
+  "ContactTypeDescription" varchar(255)
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  ContactTypeId [pk]
+  ContactTypeName [unique, name: "uq_ContactType_ContactTypeName"]
+}
+}
+
+Table "dbo"."Person" {
+  "PersonId" int [not null, increment]
+  "NPI" bigint
+  "IsProvider" bit [not null]
+  "PersonStatusId" int
+  "FirstName" varchar(255)
+  "MiddleName" varchar(255)
+  "LastName" varchar(255)
+  "DateOfBirth" date
+  "PhotoS" varbinary(max)
+  "Bio" varchar(255)
+  "Hyperlink" varchar(255)
+  "StartDate" date [not null]
+  "TermDate" date
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  PersonId [pk]
+}
+}
+
+Table "dbo"."PersonEducation" {
+  "PersonEducationId" int [not null, increment]
+  "PersonId" int
+  "Institution" varchar(255)
+  "Degree" varchar(255)
+  "EffectiveDate" date
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  PersonEducationId [pk]
+  (PersonId, Institution, Degree, EffectiveDate) [unique, name: "uq_PersonEducation_NoDups"]
+}
+}
+
+Table "dbo"."PersonCredential" {
+  "PersonCredentialId" int [not null, increment]
+  "PersonId" int
+  "CredentialCode" varchar(25)
+  "CredentialDescription" varchar(255)
+  "StartDate" date [not null]
+  "TermDate" date
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  PersonCredentialId [pk]
+  (PersonId, CredentialCode) [unique, name: "uq_PersonCredential_PersonCredentialCode"]
+}
+}
+
+Table "dbo"."Practice" {
+  "PracticeId" int [not null, increment]
+  "TIN" bigint [not null]
+  "NPI" bigint
+  "PracticeName" varchar(255) [not null]
+  "Website" varchar(255)
+  "StartDate" date [not null]
+  "TermDate" date
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  PracticeId [pk]
+  TIN [unique, name: "uq_Practice_TIN"]
+}
+}
+
+Table "dbo"."Location" {
+  "LocationId" int [not null, increment]
+  "PracticeId" int
+  "TIN" bigint
+  "NPI" bigint
+  "LocationName" varchar(255) [not null]
+  "Street1" varchar(255)
+  "Street2" varchar(255)
+  "City" varchar(255)
+  "State" varchar(2)
+  "ZipCode" varchar(10)
+  "TeleHealthId" int
+  "StartDate" date [not null]
+  "TermDate" date
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  LocationId [pk]
+}
+}
+
+Table "dbo"."LocationSchedule" {
+  "LocationScheduleId" int [not null, increment]
+  "LocationId" int
+  "DayOfWeek" int
+  "StartTime" time
+  "EndTime" time
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  LocationScheduleId [pk]
+  (LocationId, DayOfWeek) [unique, name: "uq_LocationSchedule_LocationDayOfWeek"]
+}
+}
+
+Table "dbo"."Phone" {
+  "PhoneId" int [not null, increment]
+  "CountryCode" smallint
+  "AreaCode" int
+  "PhoneNumber" int
+  "Extension" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  PhoneId [pk]
+  (CountryCode, AreaCode, PhoneNumber, Extension) [unique, name: "uq_Phone_PhoneNumber"]
+}
+}
+
+Table "dbo"."Email" {
+  "EmailId" int [not null, increment]
+  "Email" varchar(255) [not null]
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  EmailId [pk]
+}
+}
+
+Table "xwlk"."LocationSpecialty" {
+  "LocationId" int
+  "SpecialtyId" int
+  "SpecialtyTypeId" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  (LocationId, SpecialtyId) [pk]
+}
+}
+
+Table "xwlk"."PersonSpecialty" {
+  "PersonId" int
+  "SpecialtyId" int
+  "SpecialtyTypeId" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  (PersonId, SpecialtyId) [pk]
+}
+}
+
+Table "xwlk"."LocationPeople" {
+  "LocationId" int
+  "PersonId" int
+  "RoleId" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  (LocationId, PersonId, RoleId) [pk]
+}
+}
+
+Table "xwlk"."PersonPhone" {
+  "PersonId" int
+  "PhoneId" int
+  "ContactTypeId" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  (PersonId, PhoneId) [pk]
+}
+}
+
+Table "xwlk"."LocationPhone" {
+  "LocationId" int
+  "PhoneId" int
+  "ContactTypeId" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  (LocationId, PhoneId) [pk]
+}
+}
+
+Table "xwlk"."PersonEmail" {
+  "PersonId" int
+  "EmailId" int
+  "ContactTypeId" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  (PersonId, EmailId) [pk]
+}
+}
+
+Table "xwlk"."LocationEmail" {
+  "LocationId" int
+  "EmailId" int
+  "ContactTypeId" int
+  "ValidFrom" datetime2 [not null]
+  "ValidTo" datetime2 [not null]
+
+Indexes {
+  (LocationId, EmailId) [pk]
+}
+}
+
+Ref "fk_Person_PersonStatusId":"ref"."PersonStatus"."PersonStatusId" < "dbo"."Person"."PersonStatusId" [update: cascade, delete: set null]
+
+Ref "fk_PersonEducation_PersonId":"dbo"."Person"."PersonId" < "dbo"."PersonEducation"."PersonId" [update: cascade, delete: set null]
+
+Ref "fk_PersonCredential_PersonId":"dbo"."Person"."PersonId" < "dbo"."PersonCredential"."PersonId" [update: cascade, delete: set null]
+
+Ref "fk_Location_PracticeId":"dbo"."Practice"."PracticeId" < "dbo"."Location"."PracticeId" [update: cascade, delete: set null]
+
+Ref "fk_Location_TeleHealthId":"ref"."TeleHealth"."TeleHealthId" < "dbo"."Location"."TeleHealthId" [update: cascade, delete: set null]
+
+Ref "fk_LocationSchedule_LocationId":"dbo"."Location"."LocationId" < "dbo"."LocationSchedule"."LocationId" [update: cascade, delete: set null]
+
+Ref "fk_LocationSpecialty_LocationId":"dbo"."Location"."LocationId" < "xwlk"."LocationSpecialty"."LocationId" [update: cascade, delete: set null]
+
+Ref "fk_LocationSpecialty_SpecialtyId":"ref"."Specialty"."SpecialtyId" < "xwlk"."LocationSpecialty"."SpecialtyId" [update: cascade, delete: set null]
+
+Ref "fk_LocationSpecialty_SpecialtyTypeId":"ref"."SpecialtyType"."SpecialtyTypeId" < "xwlk"."LocationSpecialty"."SpecialtyTypeId" [update: cascade, delete: set null]
+
+Ref "fk_PersonSpecialty_PersonId":"dbo"."Person"."PersonId" < "xwlk"."PersonSpecialty"."PersonId" [update: cascade, delete: set null]
+
+Ref "fk_PersonSpecialty_SpecialtyId":"ref"."Specialty"."SpecialtyId" < "xwlk"."PersonSpecialty"."SpecialtyId" [update: cascade, delete: set null]
+
+Ref "fk_PersonSpecialty_SpecialtyTypeId":"ref"."SpecialtyType"."SpecialtyTypeId" < "xwlk"."PersonSpecialty"."SpecialtyTypeId" [update: cascade, delete: set null]
+
+Ref "fk_LocationPeople_LocationId":"dbo"."Location"."LocationId" < "xwlk"."LocationPeople"."LocationId" [update: cascade, delete: set null]
+
+Ref "fk_LocationPeople_PersonId":"dbo"."Person"."PersonId" < "xwlk"."LocationPeople"."PersonId" [update: cascade, delete: set null]
+
+Ref "fk_LocationPeople_RoleId":"ref"."Role"."RoleId" < "xwlk"."LocationPeople"."RoleId" [update: cascade, delete: set null]
+
+Ref "fk_PersonPhone_PersonId":"dbo"."Person"."PersonId" < "xwlk"."PersonPhone"."PersonId" [update: cascade, delete: set null]
+
+Ref "fk_PersonPhone_PhoneId":"dbo"."Phone"."PhoneId" < "xwlk"."PersonPhone"."PhoneId" [update: cascade, delete: set null]
+
+Ref "fk_PersonPhone_ContactTypeId":"ref"."ContactType"."ContactTypeId" < "xwlk"."PersonPhone"."ContactTypeId" [update: cascade, delete: set null]
+
+Ref "fk_LocationPhone_LocationId":"dbo"."Location"."LocationId" < "xwlk"."LocationPhone"."LocationId" [update: cascade, delete: set null]
+
+Ref "fk_LocationPhone_PhoneId":"dbo"."Phone"."PhoneId" < "xwlk"."LocationPhone"."PhoneId" [update: cascade, delete: set null]
+
+Ref "fk_LocationPhone_ContactTypeId":"ref"."ContactType"."ContactTypeId" < "xwlk"."LocationPhone"."ContactTypeId" [update: cascade, delete: set null]
+
+Ref "fk_PersonEmail_PersonId":"dbo"."Person"."PersonId" < "xwlk"."PersonEmail"."PersonId" [update: cascade, delete: set null]
+
+Ref "fk_PersonEmail_EmailId":"dbo"."Email"."EmailId" < "xwlk"."PersonEmail"."EmailId" [update: cascade, delete: set null]
+
+Ref "fk_PersonEmail_ContactTypeId":"ref"."ContactType"."ContactTypeId" < "xwlk"."PersonEmail"."ContactTypeId" [update: cascade, delete: set null]
+
+Ref "fk_LocationEmail_LocationId":"dbo"."Location"."LocationId" < "xwlk"."LocationEmail"."LocationId" [update: cascade, delete: set null]
+
+Ref "fk_LocationEmail_EmailId":"dbo"."Email"."EmailId" < "xwlk"."LocationEmail"."EmailId" [update: cascade, delete: set null]
+
+Ref "fk_LocationEmail_ContactTypeId":"ref"."ContactType"."ContactTypeId" < "xwlk"."LocationEmail"."ContactTypeId" [update: cascade, delete: set null]
+
+TableGroup Person {
+  dbo.Person
+  ref.PersonStatus
+  dbo.PersonEducation
+  dbo.PersonCredential
+}
+
+TableGroup Practice {
+  dbo.Practice
+  dbo.Location
+  dbo.LocationSchedule
+  ref.TeleHealth
+}
+
+TableGroup Specialty {
+  ref.Specialty
+  ref.SpecialtyType
+  xwlk.LocationSpecialty
+  xwlk.PersonSpecialty
+}
+
+TableGroup Phone {
+  dbo.Phone
+  xwlk.LocationPhone
+  xwlk.PersonPhone
+}
+
+TableGroup Email {
+  dbo.Email
+  xwlk.LocationEmail
+  xwlk.PersonEmail
+}
